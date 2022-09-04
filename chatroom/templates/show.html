@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        let socket = new WebSocket('ws://localhost:8000/ws/chat/room1/');
+
+        socket.onopen = function(e) {
+            alert("[open] Соединение установлено");
+            socket.send("It works");
+        };
+
+        socket.onmessage = function(event) {
+            alert(`[message] Данные получены с сервера: ${event.data}`);
+        };
+
+        socket.onclose = function(event) {
+        if (event.wasClean) {
+            alert(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+        } else {
+            // например, сервер убил процесс или сеть недоступна
+            // обычно в этом случае event.code 1006
+            alert('[close] Соединение прервано');
+        }
+        };
+
+        socket.onerror = function(error) {
+            alert(`[error] ${error.message}`);
+        };
+    </script>
+</body>
+</html>
