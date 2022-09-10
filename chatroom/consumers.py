@@ -2,7 +2,6 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
-from django.core import serializers
 
 from .models import Room, Message
 
@@ -11,8 +10,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = 'chat_%s' % self.room_name
 
-        self.room = await database_sync_to_async(self.defineRoom)()
-        self.messages = await database_sync_to_async(self.getMessages)()
+        self.room = await self.getRoom()
 
         await self.accept()
 
@@ -43,10 +41,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         timestamp = (getattr(msg, 'timestamp')).isoformat()
         
         await self.send(text_data=json.dumps({
-            'user': event['user_name'],
+            'name': event['user_name'],
             'room': event['room_id'],
             'text': event['message'],
-            'date': timestamp
+            'timestamp': timestamp
         }))
         
 
@@ -57,14 +55,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         
     # accessing to database through async
-    def defineRoom(self):
-        try:
-            return Room.objects.get(name=self.room_name)
-        except:
-            return Room.objects.create(name=self.room_name)
-
-    def getMessages(self):
-        return serializers.serialize('python', Message.objects.filter(room=self.room))
+    @database_sync_to_async 
+    def getRoom(self):
+        return Room.objects.get(name=self.room_name)
 
     @database_sync_to_async 
     def getUser(self, event):
