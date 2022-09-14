@@ -7,8 +7,8 @@ from .models import Room, Message
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = 'chat_%s' % self.room_name
+        self.room_id = self.scope['url_route']['kwargs']['room_name']
+        self.room_group_name = 'chat_%s' % self.room_id
 
         self.room = await self.getRoom()
 
@@ -28,7 +28,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat.message',
                 'user_name': self.scope['user'].username,
-                'room_id': self.room_name,
+                'room_id': self.room_id,
                 'message': text_data.replace('"', ''),
             } 
         )
@@ -57,7 +57,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # accessing to database through async
     @database_sync_to_async 
     def getRoom(self):
-        return Room.objects.get(name=self.room_name)
+        return Room.objects.get(id=self.room_id)
 
     @database_sync_to_async 
     def getUser(self, event):

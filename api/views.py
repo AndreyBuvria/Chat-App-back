@@ -3,22 +3,32 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
+from rest_framework import status
 
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 
 from chatroom.models import Message, Room
-from .serializers import MessagesSerializer
+from .serializers import MessagesSerializer, RoomsSerializer
     
 class Messages(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):
-        print(request)
-        room_name = Room.objects.get(name=pk)
+        room_name = Room.objects.get(id=pk)
         msgs = Message.objects.filter(room=room_name)
         serializer = MessagesSerializer(msgs, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class Rooms(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        rooms = Room.objects.all()
+        serializer = RoomsSerializer(rooms, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class Login(APIView):
     def post(self, request):
@@ -26,8 +36,16 @@ class Login(APIView):
         password = request.data['password']
 
         user = authenticate(username=username, password=password)
+
         if user is not None:
-            token = Token.objects.get(user=user)
+            login(request, user)
+            try:
+                token = Token.objects.get(user=user)
+            except:
+                token = Token.objects.create(user=user)
+
         else:
-            return Response({'user': 'not found'})
-        return Response({'token': token.key})
+            return Response({'Auth': 'Incorrect credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({
+            'token': token.key, 
+            'user': request.user.username}, status=status.HTTP_200_OK)
